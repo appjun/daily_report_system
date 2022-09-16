@@ -38,6 +38,16 @@ public class ReportService extends ServiceBase{
     }
 
     //指定されたページ数の一覧画面に表示する日報データを取得し、ReportViewのリストで返却する
+    public List<ReportView> getAllPerPage(int page){
+
+        List<Report> reports = em.createNamedQuery(JpaConst.Q_REP_GET_ALL,Report.class)
+                .setFirstResult(JpaConst.ROW_PER_PAGE * (page - 1))
+                .setMaxResults(JpaConst.ROW_PER_PAGE)
+                .getResultList();
+        return ReportConverter.toViewList(reports);
+    }
+
+    //日報データのデータ件数を取得し、返却する
     public long countAll() {
         long reports_count = (long) em.createNamedQuery(JpaConst.Q_REP_COUNT,Long.class)
                 .getSingleResult();
