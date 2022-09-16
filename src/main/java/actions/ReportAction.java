@@ -15,13 +15,13 @@ import services.ReportService;
 
 //日報に関する処理を行うActionクラス
 
-public class ReportAction extends ActionBase{
+public class ReportAction extends ActionBase {
 
     private ReportService service;
 
     //メソッドを実行する
     @Override
-    public void process() throws ServletException,IOException{
+    public void process() throws ServletException, IOException {
 
         service = new ReportService();
 
@@ -31,7 +31,7 @@ public class ReportAction extends ActionBase{
     }
 
     //一覧画面を表示する
-    public void index() throws ServletException,IOException{
+    public void index() throws ServletException, IOException {
 
         //指定されたページ数の一覧画面に表示する日報データを取得
         int page = getPage();
@@ -40,15 +40,15 @@ public class ReportAction extends ActionBase{
         //全日報データの件数を取得
         long reportsCount = service.countAll();
 
-        putRequestScope(AttributeConst.REPORTS,reports);
-        putRequestScope(AttributeConst.REP_COUNT,reportsCount);
-        putRequestScope(AttributeConst.PAGE,page);
-        putRequestScope(AttributeConst.MAX_ROW,JpaConst.ROW_PER_PAGE);
+        putRequestScope(AttributeConst.REPORTS, reports);
+        putRequestScope(AttributeConst.REP_COUNT, reportsCount);
+        putRequestScope(AttributeConst.PAGE, page);
+        putRequestScope(AttributeConst.MAX_ROW, JpaConst.ROW_PER_PAGE);
 
         //セッションにフラッシュメッセージが設定されている場合はリクエストスコープに移し替え、セッションスコープからは削除する
         String flush = getSessionScope(AttributeConst.FLUSH);
-        if(flush != null) {
-            putRequestScope(AttributeConst.FLUSH,flush);
+        if (flush != null) {
+            putRequestScope(AttributeConst.FLUSH, flush);
             removeSessionScope(AttributeConst.FLUSH);
         }
 
@@ -57,30 +57,31 @@ public class ReportAction extends ActionBase{
     }
 
     //新規登録画面を表示する
-    public void entryNew() throws ServletException,IOException{
+    public void entryNew() throws ServletException, IOException {
 
-        putRequestScope(AttributeConst.TOKEN,getTokenId());
+        putRequestScope(AttributeConst.TOKEN, getTokenId());
 
         //日報情報の空インスタンスに、日報の日付＝今日の日付を設定する
         ReportView rv = new ReportView();
         rv.setReportDate(LocalDate.now());
-        putRequestScope(AttributeConst.REPORT,rv);
+        putRequestScope(AttributeConst.REPORT, rv);
 
         //新規登録画面を表示
         forward(ForwardConst.FW_REP_NEW);
     }
 
     //新規登録を行う
-    public void create() throws ServletException,IOException{
+    public void create() throws ServletException, IOException {
 
         //CSRF対策 tokenのチェック
-        if(checkToken()) {
+        if (checkToken()) {
 
             //日報の日付が入力されていなければ、今日の日付を設定
             LocalDate day = null;
-            if(getRequestParam(AttributeConst.REP_DATE) == null || getRequestParam(AttributeConst.REP_DATE).equals("")) {
+            if (getRequestParam(AttributeConst.REP_DATE) == null
+                    || getRequestParam(AttributeConst.REP_DATE).equals("")) {
                 day = LocalDate.now();
-            }else {
+            } else {
                 day = LocalDate.parse(getRequestParam(AttributeConst.REP_DATE));
             }
 
@@ -100,39 +101,39 @@ public class ReportAction extends ActionBase{
             //日報情報登録
             List<String> errors = service.create(rv);
 
-            if(errors.size() > 0) {
+            if (errors.size() > 0) {
                 //登録中にエラーがあった場合
 
-                putRequestScope(AttributeConst.TOKEN,getTokenId());
-                putRequestScope(AttributeConst.REPORT,rv);
-                putRequestScope(AttributeConst.ERR,errors);
+                putRequestScope(AttributeConst.TOKEN, getTokenId());
+                putRequestScope(AttributeConst.REPORT, rv);
+                putRequestScope(AttributeConst.ERR, errors);
 
                 //新規登録画面を表示
                 forward(ForwardConst.FW_REP_NEW);
-            }else {
+            } else {
                 //登録中にエラーがなかった場合
 
                 //セッションに登録完了のフラッシュメッセージを設定
-                putSessionScope(AttributeConst.FLUSH,MessageConst.I_REGISTERED.getMessage());
+                putSessionScope(AttributeConst.FLUSH, MessageConst.I_REGISTERED.getMessage());
 
                 //一覧画面にリダイレクト
-                redirect(ForwardConst.ACT_REP,ForwardConst.CMD_INDEX);
+                redirect(ForwardConst.ACT_REP, ForwardConst.CMD_INDEX);
             }
         }
     }
 
     //詳細画面を表示する
-    public void show() throws ServletException,IOException{
+    public void show() throws ServletException, IOException {
 
         //idを条件に日報データを取得する
         ReportView rv = service.findOne(toNumber(getRequestParam(AttributeConst.REP_ID)));
 
-        if(rv == null) {
+        if (rv == null) {
             //該当の日報データが存在しない場合はエラー画面を表示
             forward(ForwardConst.FW_ERR_UNKNOWN);
 
-        }else {
-            putRequestScope(AttributeConst.REPORT,rv);
+        } else {
+            putRequestScope(AttributeConst.REPORT, rv);
 
             //詳細画面を表示
             forward(ForwardConst.FW_REP_SHOW);
@@ -140,7 +141,7 @@ public class ReportAction extends ActionBase{
     }
 
     //編集画面を表示する
-    public void edit() throws ServletException,IOException{
+    public void edit() throws ServletException, IOException {
 
         //idを条件に日報データを取得する
         ReportView rv = service.findOne(toNumber(getRequestParam(AttributeConst.REP_ID)));
@@ -148,17 +149,55 @@ public class ReportAction extends ActionBase{
         //セッションからログイン中の従業員情報を取得
         EmployeeView ev = (EmployeeView) getSessionScope(AttributeConst.LOGIN_EMP);
 
-        if(rv == null || ev.getId() != rv.getEmployee().getId()) {
+        if (rv == null || ev.getId() != rv.getEmployee().getId()) {
             //該当の日報データが存在しない、または
             //ログインしている従業員が日報の作成者でない場合はエラー画面を表示
             forward(ForwardConst.FW_ERR_UNKNOWN);
 
-        }else {
-            putRequestScope(AttributeConst.TOKEN,getTokenId());
-            putRequestScope(AttributeConst.REPORT,rv);
+        } else {
+            putRequestScope(AttributeConst.TOKEN, getTokenId());
+            putRequestScope(AttributeConst.REPORT, rv);
 
             //編集画面を表示
             forward(ForwardConst.FW_REP_EDIT);
+        }
+    }
+
+    //更新を行う
+    public void update() throws ServletException, IOException {
+
+        //CSRF対策 tokenのチェック
+        if (checkToken()) {
+
+            //idを条件に日報データを取得する
+            ReportView rv = service.findOne(toNumber(getRequestParam(AttributeConst.REP_ID)));
+
+            //入力された日報内容を設定する
+            rv.setReportDate(toLocalDate(getRequestParam(AttributeConst.REP_DATE)));
+            rv.setTitle(getRequestParam(AttributeConst.REP_TITLE));
+            rv.setContent(getRequestParam(AttributeConst.REP_CONTENT));
+
+            //日報データを更新する
+            List<String> errors = service.update(rv);
+
+            if (errors.size() > 0) {
+                //更新中にエラーが発生した場合
+
+                putRequestScope(AttributeConst.TOKEN, getTokenId());
+                putRequestScope(AttributeConst.REPORT, rv);
+                putRequestScope(AttributeConst.ERR, errors);
+
+                //編集画面を再表示
+                forward(ForwardConst.FW_REP_EDIT);
+            } else {
+                //更新中にエラーがなかった場合
+
+                //セッションに更新完了のフラッシュメッセージを設定
+                putSessionScope(AttributeConst.FLUSH, MessageConst.I_UPDATED.getMessage());
+
+                //一覧画面にリダイレクト
+                redirect(ForwardConst.ACT_REP, ForwardConst.CMD_INDEX);
+            }
         }
     }
 }
